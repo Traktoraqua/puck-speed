@@ -6,6 +6,7 @@ import { estimate } from './speed/estimator.js';
 import { Calibration } from './calibration/calibration.js';
 import { measureDarkBlob } from './calibration/puckDetect.js';
 import { History } from './session/history.js';
+import { Settings } from './session/settings.js';
 import { UI } from './ui/ui.js';
 
 export function appName() {
@@ -20,7 +21,21 @@ export async function boot() {
   const ui = new UI();
   const calibration = new Calibration();
   const history = new History();
-  history && ui.renderHistory(history.list());
+  const settings = new Settings();
+
+  ui.setUnitLabel(settings.getUnit());
+  ui.setDirLabel(settings.getDirection());
+  ui.renderHistory(history.list());
+
+  // Unit and direction toggles (persisted; usable before the camera starts).
+  ui.onUnitClick(() => {
+    const unit = settings.setUnit(settings.getUnit() === 'kmh' ? 'mph' : 'kmh');
+    ui.setUnitLabel(unit);
+    ui.renderHistory(history.list());
+  });
+  ui.onDirClick(() => {
+    ui.setDirLabel(settings.setDirection(settings.getDirection() === 'right' ? 'left' : 'right'));
+  });
 
   // iOS/WebKit rejects getUserMedia unless it's invoked from a user gesture, so
   // the whole camera+mic pipeline starts on the "Tap to start" tap, not on load.
@@ -45,12 +60,12 @@ export async function boot() {
     ui.showWarning('');
     ui.dismissStart();
     ui.renderPreview(capture.canvas); // the cropped horizontal band
-    wireAfterStart(ui, calibration, history, capture);
+    wireAfterStart(ui, calibration, history, capture, settings);
   });
 }
 
 // Wires calibration + the shot trigger once the camera stream exists.
-async function wireAfterStart(ui, calibration, history, capture) {
+async function wireAfterStart(ui, calibration, history, capture, settings) {
   // Draggable crosshair: position it over the black puck, then press Calibrate.
   ui.enableCrosshair();
   ui.showWarning('Drag the crosshair onto the puck, then press Calibrate.');
@@ -58,6 +73,13 @@ async function wireAfterStart(ui, calibration, history, capture) {
   // Puck geometry from calibration, used to focus shot detection on the puck's
   // travel line and reject bigger/off-line blobs (shooter, stick, sheet).
   let puckGeom = null;
+
+  ui.onResetClick(() => {
+    calibration.clear();
+    puckGeom = null;
+    ui.clearOverlay();
+    ui.showWarning('Calibration reset — drag the crosshair onto the puck and press Calibrate.');
+  });
 
   // Calibrate from the puck under the crosshair: flood-fill the dark region and
   // use its on-screen width as the known 76.2 mm diameter → pixels-per-metre.
@@ -80,8 +102,8 @@ async function wireAfterStart(ui, calibration, history, capture) {
       const { pxPerMeter } = calibration.setFromPoints(
         { x: box.minX, y: cy }, { x: box.maxX, y: cy }, 0.0762, 'puck-crosshair'
       );
-      // Track only right of the puck's rest position (it launches rightward).
-      puckGeom = { cy, heightPx: box.heightPx, minX: box.maxX };
+      // Store both edges; detection tracks downrange in the chosen shot direction.
+      puckGeom = { cy, heightPx: box.heightPx, leftEdge: box.minX, rightEdge: box.maxX };
       ui.showCalibrationBox(box, capture.detectWidth, capture.detectHeight);
       ui.showWarning(`Calibrated: puck ${box.widthPx}px wide → ${Math.round(pxPerMeter)} px/m. Ready — take a shot.`);
     } catch (err) {
@@ -107,12 +129,14 @@ async function wireAfterStart(ui, calibration, history, capture) {
           ? capture.settings.exposureTime * 1e-4   // getSettings() reports 100-µs units; estimator wants seconds
           : undefined;
         // Focus detection on the puck's travel line (from calibration).
+        const dir = settings.getDirection();
         const roi = puckGeom
           ? {
               centerY: puckGeom.cy,
               halfHeight: Math.max(30, puckGeom.heightPx * 6),
               maxHeight: Math.max(24, puckGeom.heightPx * 4),
-              minX: puckGeom.minX,
+              dir,
+              boundX: dir === 'left' ? puckGeom.leftEdge : puckGeom.rightEdge,
             }
           : undefined;
         const track = detect(frames, { roi });

@@ -1,3 +1,5 @@
+import { kmhToMph } from '../math/units.js';
+
 export class UI {
   constructor(root = document.getElementById('app')) {
     this.root = root;
@@ -11,7 +13,12 @@ export class UI {
       <div id="warn"></div>
       <div class="speed" id="speed"><small>drag the crosshair onto the puck</small></div>
       <div class="history" id="history"></div>
-      <div style="padding:6px;text-align:center"><button id="calBtn">Calibrate</button></div>
+      <div class="controls">
+        <button id="calBtn">Calibrate</button>
+        <button id="dirBtn">Shots: → Right</button>
+        <button id="unitBtn">km/h</button>
+        <button id="resetBtn" class="secondary">Reset calibration</button>
+      </div>
     `;
     this.$speed = this.root.querySelector('#speed');
     this.$history = this.root.querySelector('#history');
@@ -20,8 +27,17 @@ export class UI {
     this.$preview = this.root.querySelector('.preview');
     this.$overlay = this.root.querySelector('#overlay');
     this.$crosshair = this.root.querySelector('#crosshair');
+    this.$dirBtn = this.root.querySelector('#dirBtn');
+    this.$unitBtn = this.root.querySelector('#unitBtn');
     this.crossFx = 0.5; // crosshair position as a fraction of the preview
     this.crossFy = 0.5;
+    this.unit = 'kmh';
+  }
+  // Convert a canonical km/h value to the display unit + label.
+  _fmt(kmh) {
+    return this.unit === 'mph'
+      ? { value: kmhToMph(kmh), label: 'mph' }
+      : { value: kmh, label: 'km/h' };
   }
   renderPreview(video) {
     video.classList.add('preview-video');
@@ -40,11 +56,29 @@ export class UI {
     }
     const cls = result.confidence === 'low' ? 'confidence-low' : '';
     const tag = result.confidence === 'high' ? '' : ` · ${result.confidence}`;
+    const { value, label } = this._fmt(result.speedKmh);
     this.$speed.innerHTML =
-      `<span class="${cls}">${result.speedKmh.toFixed(1)}</span><small> km/h${tag}</small>`;
+      `<span class="${cls}">${value.toFixed(1)}</span><small> ${label}${tag}</small>`;
   }
+  // list holds canonical km/h values; display converts to the current unit.
   renderHistory(list) {
-    this.$history.innerHTML = list.map((v) => `<span>${v.toFixed(1)}</span>`).join('');
+    this.$history.innerHTML = list.map((kmh) => `<span>${this._fmt(kmh).value.toFixed(1)}</span>`).join('');
+  }
+  setUnitLabel(unit) {
+    this.unit = unit;
+    this.$unitBtn.textContent = unit === 'mph' ? 'mph' : 'km/h';
+  }
+  setDirLabel(direction) {
+    this.$dirBtn.textContent = direction === 'left' ? 'Shots: ← Left' : 'Shots: → Right';
+  }
+  onUnitClick(handler) {
+    this.$unitBtn.addEventListener('click', handler);
+  }
+  onDirClick(handler) {
+    this.$dirBtn.addEventListener('click', handler);
+  }
+  onResetClick(handler) {
+    this.root.querySelector('#resetBtn').addEventListener('click', handler);
   }
   // iOS requires getUserMedia to be triggered by a user gesture, so the camera
   // starts from this button rather than on page load.
