@@ -7,7 +7,7 @@ export class UI {
       <div id="warn"></div>
       <div class="speed" id="speed"><small>tap to calibrate</small></div>
       <div class="history" id="history"></div>
-      <div style="padding:12px;text-align:center"><button id="calBtn">Calibrate (puck edges)</button></div>
+      <div style="padding:12px;text-align:center"><button id="calBtn">Calibrate (tap the puck)</button></div>
     `;
     this.$speed = this.root.querySelector('#speed');
     this.$history = this.root.querySelector('#history');
@@ -49,18 +49,26 @@ export class UI {
   onCalibrateClick(handler) {
     this.root.querySelector('#calBtn').addEventListener('click', handler);
   }
-  // Collect two taps on the preview; resolves with the two CSS-space points + element rect.
-  collectTwoTaps() {
+  // Collect a single tap on the preview; resolves with the CSS-space point + element rect.
+  collectTap() {
     return new Promise((resolve) => {
-      const pts = [];
       const handler = (ev) => {
-        pts.push({ x: ev.clientX, y: ev.clientY });
-        if (pts.length === 2) {
-          this.$preview.removeEventListener('click', handler);
-          resolve({ pts, rect: this.$preview.getBoundingClientRect() });
-        }
+        this.$preview.removeEventListener('click', handler);
+        resolve({ pt: { x: ev.clientX, y: ev.clientY }, rect: this.$preview.getBoundingClientRect() });
       };
       this.$preview.addEventListener('click', handler);
     });
+  }
+  // Draw the detected puck box on the overlay (box is in detection-pixel space).
+  showCalibrationBox(box, detectWidth, detectHeight) {
+    const overlay = this.root.querySelector('#overlay');
+    const l = (box.minX / detectWidth) * 100;
+    const t = (box.minY / detectHeight) * 100;
+    const w = (box.widthPx / detectWidth) * 100;
+    const h = (box.heightPx / detectHeight) * 100;
+    overlay.innerHTML = `<div class="calbox" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%"></div>`;
+  }
+  clearOverlay() {
+    this.root.querySelector('#overlay').innerHTML = '';
   }
 }

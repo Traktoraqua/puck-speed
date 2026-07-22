@@ -3,6 +3,7 @@ import { startAudioTrigger } from './audio/audioTrigger.js';
 import { detect } from './detection/detect.js';
 import { estimate } from './speed/estimator.js';
 import { Calibration } from './calibration/calibration.js';
+import { measureDarkBlob } from './calibration/puckDetect.js';
 import { History } from './session/history.js';
 import { UI } from './ui/ui.js';
 import { cssToDetection } from './ui/coords.js';
@@ -50,14 +51,29 @@ export async function boot() {
 
 // Wires calibration + the shot trigger once the camera stream exists.
 async function wireAfterStart(ui, calibration, history, capture) {
+  // One tap on the black puck (on the white sheet): flood-fill the dark region
+  // and use its on-screen width as the known 76.2 mm diameter → pixels-per-metre.
   ui.onCalibrateClick(async () => {
-    ui.showWarning('Tap the two edges of the puck (76.2 mm).');
-    const { pts, rect } = await ui.collectTwoTaps();
-    const p1 = cssToDetection(pts[0], rect, capture.detectWidth, capture.detectHeight);
-    const p2 = cssToDetection(pts[1], rect, capture.detectWidth, capture.detectHeight);
+    ui.showWarning('Tap the black puck.');
+    const { pt, rect } = await ui.collectTap();
+    const det = cssToDetection(pt, rect, capture.detectWidth, capture.detectHeight);
+    const frame = capture.ring.frames.at(-1);
+    if (!frame) {
+      ui.showWarning('No camera frame yet — try again.');
+      return;
+    }
+    const box = measureDarkBlob(frame.gray, frame.width, frame.height, Math.round(det.x), Math.round(det.y));
+    if (!box || box.widthPx < 4) {
+      ui.showWarning('Could not find the puck there — tap directly on the black puck.');
+      return;
+    }
+    const cy = Math.round((box.minY + box.maxY) / 2);
     try {
-      calibration.setFromPoints(p1, p2, 0.0762, 'puck-diameter');
-      ui.showWarning('');
+      const { pxPerMeter } = calibration.setFromPoints(
+        { x: box.minX, y: cy }, { x: box.maxX, y: cy }, 0.0762, 'puck-auto'
+      );
+      ui.showCalibrationBox(box, capture.detectWidth, capture.detectHeight);
+      ui.showWarning(`Calibrated: puck ${box.widthPx}px wide → ${Math.round(pxPerMeter)} px/m. Ready — take a shot.`);
     } catch (err) {
       ui.showWarning(`Calibration failed: ${err.message}`);
     }
@@ -70,6 +86,7 @@ async function wireAfterStart(ui, calibration, history, capture) {
       return;
     }
     trigger.disarm();
+    ui.clearOverlay();
     const [t0, t1] = freezeWindow(triggerMs);
     // wait for the post-roll frames to arrive, then analyse
     setTimeout(() => {
