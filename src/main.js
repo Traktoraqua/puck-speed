@@ -62,7 +62,10 @@ export async function boot() {
       const frames = capture.ring.snapshot(t0, t1);
       let result;
       try {
-        result = estimate(detect(frames), scale, { exposureTime: capture.settings.exposureTime });
+        const exposureTime = capture.settings.exposureTime
+          ? capture.settings.exposureTime * 1e-4   // getSettings() reports 100-µs units; estimator wants seconds
+          : undefined;
+        result = estimate(detect(frames), scale, { exposureTime });
       } catch (err) {
         ui.showWarning(err.message);
         trigger.arm();

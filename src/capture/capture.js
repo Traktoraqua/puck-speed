@@ -24,6 +24,10 @@ export async function startCapture({ windowMs = 600, requestedFps = 60, detectWi
   video.srcObject = stream;
   await video.play();
 
+  if (!video.videoWidth) {
+    await new Promise((resolve) => video.addEventListener('loadedmetadata', resolve, { once: true }));
+  }
+
   const scale = detectWidth / video.videoWidth;
   const dw = detectWidth;
   const dh = Math.round(video.videoHeight * scale);
