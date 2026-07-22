@@ -20,10 +20,21 @@ export function medianBackground(frames) {
   return { width, height, gray: bg };
 }
 
-function candidateBlobs(frame, bg, thresholdLevel, minBlobPixels) {
+function candidateBlobs(frame, bg, thresholdLevel, minBlobPixels, roi) {
   const d = absDiff(frame.gray, bg.gray);
   const m = threshold(d, thresholdLevel);
-  return connectedComponents(m, frame.width, frame.height, minBlobPixels);
+  let blobs = connectedComponents(m, frame.width, frame.height, minBlobPixels);
+  if (roi) {
+    // Keep only blobs near the puck's travel line and no taller than a few puck
+    // heights — excludes the shooter/stick/sheet, which sit elsewhere or are bigger.
+    blobs = blobs.filter(
+      (b) =>
+        b.cy >= roi.centerY - roi.halfHeight &&
+        b.cy <= roi.centerY + roi.halfHeight &&
+        b.maxY - b.minY <= roi.maxHeight
+    );
+  }
+  return blobs;
 }
 
 function toPoint(mediaTime, b) {
@@ -38,7 +49,7 @@ export function detect(frames, opts = {}) {
   const bg = medianBackground(frames);
   const perFrame = frames.map((fr) => ({
     mediaTime: fr.mediaTime,
-    blobs: candidateBlobs(fr, bg, thresholdLevel, minBlobPixels),
+    blobs: candidateBlobs(fr, bg, thresholdLevel, minBlobPixels, opts.roi),
   }));
 
   // One point per frame: the largest moving blob. We deliberately do NOT fit a

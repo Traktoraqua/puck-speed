@@ -92,6 +92,16 @@ export class UI {
     const h = (box.heightPx / detectHeight) * 100;
     this.$overlay.innerHTML = `<div class="calbox" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%"></div>`;
   }
+  // Debug: draw the detected shot track as dots (points in detection-pixel space).
+  showTrack(track, detectWidth, detectHeight) {
+    this.$overlay.innerHTML = track.points
+      .map((p) => {
+        const l = (p.x / detectWidth) * 100;
+        const t = (p.y / detectHeight) * 100;
+        return `<div class="track-dot" style="left:${l}%;top:${t}%"></div>`;
+      })
+      .join('');
+  }
   clearOverlay() {
     this.$overlay.innerHTML = '';
   }

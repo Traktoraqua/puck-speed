@@ -55,6 +55,10 @@ async function wireAfterStart(ui, calibration, history, capture) {
   ui.enableCrosshair();
   ui.showWarning('Drag the crosshair onto the puck, then press Calibrate.');
 
+  // Puck geometry from calibration, used to focus shot detection on the puck's
+  // travel line and reject bigger/off-line blobs (shooter, stick, sheet).
+  let puckGeom = null;
+
   // Calibrate from the puck under the crosshair: flood-fill the dark region and
   // use its on-screen width as the known 76.2 mm diameter → pixels-per-metre.
   ui.onCalibrateClick(() => {
@@ -76,6 +80,7 @@ async function wireAfterStart(ui, calibration, history, capture) {
       const { pxPerMeter } = calibration.setFromPoints(
         { x: box.minX, y: cy }, { x: box.maxX, y: cy }, 0.0762, 'puck-crosshair'
       );
+      puckGeom = { cy, heightPx: box.heightPx };
       ui.showCalibrationBox(box, capture.detectWidth, capture.detectHeight);
       ui.showWarning(`Calibrated: puck ${box.widthPx}px wide → ${Math.round(pxPerMeter)} px/m. Ready — take a shot.`);
     } catch (err) {
@@ -100,7 +105,17 @@ async function wireAfterStart(ui, calibration, history, capture) {
         const exposureTime = capture.settings.exposureTime
           ? capture.settings.exposureTime * 1e-4   // getSettings() reports 100-µs units; estimator wants seconds
           : undefined;
-        result = estimate(detect(frames), scale, { exposureTime });
+        // Focus detection on the puck's travel line (from calibration).
+        const roi = puckGeom
+          ? {
+              centerY: puckGeom.cy,
+              halfHeight: Math.max(30, puckGeom.heightPx * 6),
+              maxHeight: Math.max(24, puckGeom.heightPx * 4),
+            }
+          : undefined;
+        const track = detect(frames, { roi });
+        ui.showTrack(track, capture.detectWidth, capture.detectHeight);
+        result = estimate(track, scale, { exposureTime });
       } catch (err) {
         ui.showWarning(err.message);
         trigger.arm();

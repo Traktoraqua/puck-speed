@@ -6,6 +6,7 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #0b0f14; color
 .preview video, .preview canvas { width: 100%; display: block; position: relative; z-index: 0; }
 .overlay { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .calbox { position: absolute; border: 2px solid #35d07f; border-radius: 3px; box-shadow: 0 0 8px #35d07f; }
+.track-dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #ff5c5c; box-shadow: 0 0 4px #000; }
 .crosshair { position: absolute; width: 44px; height: 44px; transform: translate(-50%, -50%); pointer-events: none; z-index: 3; }
 .crosshair[hidden] { display: none; }
 .crosshair::before, .crosshair::after { content: ''; position: absolute; background: #35d07f; box-shadow: 0 0 3px #000; }
