@@ -1,3 +1,4 @@
+import './ui/styles.css';
 import { startCapture } from './capture/capture.js';
 import { startAudioTrigger } from './audio/audioTrigger.js';
 import { detect } from './detection/detect.js';
