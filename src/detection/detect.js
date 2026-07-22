@@ -1,6 +1,5 @@
 import { absDiff, threshold } from './frameDiff.js';
 import { connectedComponents } from './blobs.js';
-import { fitTrajectory, predictAt } from '../math/linefit.js';
 export { makeFrame } from './synthetic.js';
 
 export function medianBackground(frames) {
@@ -34,7 +33,6 @@ function toPoint(mediaTime, b) {
 export function detect(frames, opts = {}) {
   const thresholdLevel = opts.thresholdLevel ?? 25;
   const minBlobPixels = opts.minBlobPixels ?? 6;
-  const tol = opts.trajectoryTolerancePx ?? 40;
   if (frames.length < 2) return { points: [], frameCount: frames.length };
 
   const bg = medianBackground(frames);
@@ -43,29 +41,16 @@ export function detect(frames, opts = {}) {
     blobs: candidateBlobs(fr, bg, thresholdLevel, minBlobPixels),
   }));
 
-  // First pass: largest blob per frame.
-  let points = [];
+  // One point per frame: the largest moving blob. We deliberately do NOT fit a
+  // global line and re-pick nearest it — when the puck sits at rest before the
+  // shot, that stationary cluster dominates the fit and the moving puck gets
+  // rejected as an outlier. The estimator instead reads speed from the fastest
+  // frame-to-frame step, which ignores the resting cluster.
+  const points = [];
   for (const pf of perFrame) {
     if (!pf.blobs.length) continue;
     const b = pf.blobs.reduce((m, x) => (x.count > m.count ? x : m));
     points.push(toPoint(pf.mediaTime, b));
-  }
-
-  // Second pass (trajectory consistency): re-pick the blob nearest the fitted line.
-  if (points.length >= 3) {
-    const fit = fitTrajectory(points);
-    const refined = [];
-    for (const pf of perFrame) {
-      if (!pf.blobs.length) continue;
-      const [px, py] = predictAt(fit, pf.mediaTime);
-      let best = null, bestD = Infinity;
-      for (const b of pf.blobs) {
-        const dd = Math.hypot(b.cx - px, b.cy - py);
-        if (dd < bestD) { bestD = dd; best = b; }
-      }
-      if (bestD <= tol) refined.push(toPoint(pf.mediaTime, best));
-    }
-    if (refined.length >= 2) points = refined;
   }
 
   points.sort((a, b) => a.t - b.t);
