@@ -1,5 +1,3 @@
-import { mpsToKmh } from '../math/units.js';
-
 export class UI {
   constructor(root = document.getElementById('app')) {
     this.root = root;
