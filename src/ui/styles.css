@@ -1,0 +1,16 @@
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #0b0f14; color: #e7edf3; }
+#app { display: flex; flex-direction: column; min-height: 100dvh; }
+.preview { position: relative; width: 100%; background: #000; }
+.preview video, .preview canvas { width: 100%; display: block; }
+.overlay { position: absolute; inset: 0; }
+.speed { font-size: 18vw; font-weight: 800; text-align: center; line-height: 1; }
+.speed small { font-size: 5vw; opacity: 0.7; }
+.confidence-low { color: #f4b740; }
+.confidence-none { color: #e5484d; }
+.history { display: flex; gap: 12px; justify-content: center; padding: 12px; }
+.history span { font-size: 6vw; font-weight: 700; }
+.badge { position: absolute; top: 8px; right: 8px; font-size: 12px; background: #1c2530; padding: 4px 8px; border-radius: 8px; }
+.warn { background: #3a2a12; color: #f4b740; padding: 10px; text-align: center; }
+button { font-size: 16px; padding: 12px 16px; border: 0; border-radius: 10px; background: #2b6cff; color: #fff; }
