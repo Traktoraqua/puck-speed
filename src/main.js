@@ -37,20 +37,8 @@ export async function boot() {
   ui.renderPreview(capture.video);
 
   ui.onCalibrateClick(async () => {
-    // AudioContext starts suspended under autoplay policy; resume it on this
-    // user gesture so the audio worklet actually receives audio and the
-    // shot trigger can fire. Without this, calibration can succeed while the
-    // trigger silently never runs.
-    if (trigger.context.state === 'suspended') {
-      await trigger.context.resume();
-    }
     ui.showWarning('Tap the two edges of the puck (76.2 mm).');
     const { pts, rect } = await ui.collectTwoTaps();
-    // Resume again on the first tap too, in case the click handler above
-    // ran before the context existed or the resume() was otherwise missed.
-    if (trigger.context.state === 'suspended') {
-      await trigger.context.resume();
-    }
     const p1 = cssToDetection(pts[0], rect, capture.detectWidth, capture.detectHeight);
     const p2 = cssToDetection(pts[1], rect, capture.detectWidth, capture.detectHeight);
     try {
@@ -85,6 +73,14 @@ export async function boot() {
       trigger.arm();
     }, 450);
   });
+
+  // Resume the autoplay-suspended AudioContext on the first user gesture anywhere.
+  // Registered after `trigger` exists (no TDZ), and covers both the calibrate tap
+  // and a returning user with saved calibration who only taps to begin shooting —
+  // without it, a suspended context means the shot trigger silently never fires.
+  document.addEventListener('pointerdown', () => {
+    if (trigger.context.state === 'suspended') trigger.context.resume();
+  }, { once: true });
 }
 
 if (typeof document !== 'undefined' && document.getElementById('app')) {
