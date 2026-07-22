@@ -6,7 +6,6 @@ import { Calibration } from './calibration/calibration.js';
 import { measureDarkBlob } from './calibration/puckDetect.js';
 import { History } from './session/history.js';
 import { UI } from './ui/ui.js';
-import { cssToDetection } from './ui/coords.js';
 
 export function appName() {
   return 'puck-speed';
@@ -51,26 +50,30 @@ export async function boot() {
 
 // Wires calibration + the shot trigger once the camera stream exists.
 async function wireAfterStart(ui, calibration, history, capture) {
-  // One tap on the black puck (on the white sheet): flood-fill the dark region
-  // and use its on-screen width as the known 76.2 mm diameter → pixels-per-metre.
-  ui.onCalibrateClick(async () => {
-    ui.showWarning('Tap the black puck.');
-    const { pt, rect } = await ui.collectTap();
-    const det = cssToDetection(pt, rect, capture.detectWidth, capture.detectHeight);
+  // Draggable crosshair: position it over the black puck, then press Calibrate.
+  ui.enableCrosshair();
+  ui.showWarning('Drag the crosshair onto the puck, then press Calibrate.');
+
+  // Calibrate from the puck under the crosshair: flood-fill the dark region and
+  // use its on-screen width as the known 76.2 mm diameter → pixels-per-metre.
+  ui.onCalibrateClick(() => {
+    const { fx, fy } = ui.getCrosshairFraction();
     const frame = capture.ring.frames.at(-1);
     if (!frame) {
       ui.showWarning('No camera frame yet — try again.');
       return;
     }
-    const box = measureDarkBlob(frame.gray, frame.width, frame.height, Math.round(det.x), Math.round(det.y));
+    const tx = Math.round(fx * frame.width);
+    const ty = Math.round(fy * frame.height);
+    const box = measureDarkBlob(frame.gray, frame.width, frame.height, tx, ty);
     if (!box || box.widthPx < 4) {
-      ui.showWarning('Could not find the puck there — tap directly on the black puck.');
+      ui.showWarning('Crosshair is not on the puck — drag it onto the black puck and press Calibrate.');
       return;
     }
     const cy = Math.round((box.minY + box.maxY) / 2);
     try {
       const { pxPerMeter } = calibration.setFromPoints(
-        { x: box.minX, y: cy }, { x: box.maxX, y: cy }, 0.0762, 'puck-auto'
+        { x: box.minX, y: cy }, { x: box.maxX, y: cy }, 0.0762, 'puck-crosshair'
       );
       ui.showCalibrationBox(box, capture.detectWidth, capture.detectHeight);
       ui.showWarning(`Calibrated: puck ${box.widthPx}px wide → ${Math.round(pxPerMeter)} px/m. Ready — take a shot.`);
