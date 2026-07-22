@@ -11,7 +11,7 @@ export class UI {
       <div id="warn"></div>
       <div class="speed" id="speed"><small>drag the crosshair onto the puck</small></div>
       <div class="history" id="history"></div>
-      <div style="padding:12px;text-align:center"><button id="calBtn">Calibrate</button></div>
+      <div style="padding:6px;text-align:center"><button id="calBtn">Calibrate</button></div>
     `;
     this.$speed = this.root.querySelector('#speed');
     this.$history = this.root.querySelector('#history');

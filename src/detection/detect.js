@@ -37,8 +37,15 @@ function candidateBlobs(frame, bg, thresholdLevel, minBlobPixels, roi) {
   return blobs;
 }
 
-function toPoint(mediaTime, b) {
-  return { t: mediaTime, x: b.cx, y: b.cy, streakLength: b.majorLength, streakAngle: b.angle, count: b.count };
+function toPoint(time, b) {
+  return { t: time, x: b.cx, y: b.cy, streakLength: b.majorLength, streakAngle: b.angle, count: b.count };
+}
+
+// Reliable per-frame time in seconds: prefer the capture wall-clock `t` (ms),
+// since iOS/WebKit often leaves rVFC mediaTime at 0. Synthetic test frames carry
+// only mediaTime, so fall back to it.
+function frameTime(fr) {
+  return fr.t != null ? fr.t / 1000 : fr.mediaTime;
 }
 
 export function detect(frames, opts = {}) {
@@ -48,7 +55,7 @@ export function detect(frames, opts = {}) {
 
   const bg = medianBackground(frames);
   const perFrame = frames.map((fr) => ({
-    mediaTime: fr.mediaTime,
+    time: frameTime(fr),
     blobs: candidateBlobs(fr, bg, thresholdLevel, minBlobPixels, opts.roi),
   }));
 
@@ -61,7 +68,7 @@ export function detect(frames, opts = {}) {
   for (const pf of perFrame) {
     if (!pf.blobs.length) continue;
     const b = pf.blobs.reduce((m, x) => (x.count > m.count ? x : m));
-    points.push(toPoint(pf.mediaTime, b));
+    points.push(toPoint(pf.time, b));
   }
 
   points.sort((a, b) => a.t - b.t);
