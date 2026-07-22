@@ -34,14 +34,14 @@ export class UI {
     this.$warn.innerHTML = msg ? `<div class="warn">${msg}</div>` : '';
   }
   showResult(result) {
-    const pts = `${result.frameCount} pts`;
     if (result.method === 'none') {
-      this.$speed.innerHTML = `<span class="confidence-none">no valid shot</span><small> ${pts}</small>`;
+      this.$speed.innerHTML = `<span class="confidence-none">no valid shot</span>`;
       return;
     }
     const cls = result.confidence === 'low' ? 'confidence-low' : '';
+    const tag = result.confidence === 'high' ? '' : ` · ${result.confidence}`;
     this.$speed.innerHTML =
-      `<span class="${cls}">${result.speedKmh.toFixed(1)}</span><small> km/h · ${result.confidence} · ${pts}</small>`;
+      `<span class="${cls}">${result.speedKmh.toFixed(1)}</span><small> km/h${tag}</small>`;
   }
   renderHistory(list) {
     this.$history.innerHTML = list.map((v) => `<span>${v.toFixed(1)}</span>`).join('');

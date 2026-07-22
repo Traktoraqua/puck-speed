@@ -116,7 +116,6 @@ async function wireAfterStart(ui, calibration, history, capture) {
             }
           : undefined;
         const track = detect(frames, { roi });
-        ui.showTrack(track, capture.detectWidth, capture.detectHeight);
         result = estimate(track, scale, { exposureTime });
       } catch (err) {
         ui.showWarning(err.message);
