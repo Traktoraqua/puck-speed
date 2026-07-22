@@ -80,7 +80,8 @@ async function wireAfterStart(ui, calibration, history, capture) {
       const { pxPerMeter } = calibration.setFromPoints(
         { x: box.minX, y: cy }, { x: box.maxX, y: cy }, 0.0762, 'puck-crosshair'
       );
-      puckGeom = { cy, heightPx: box.heightPx };
+      // Track only right of the puck's rest position (it launches rightward).
+      puckGeom = { cy, heightPx: box.heightPx, minX: box.maxX };
       ui.showCalibrationBox(box, capture.detectWidth, capture.detectHeight);
       ui.showWarning(`Calibrated: puck ${box.widthPx}px wide → ${Math.round(pxPerMeter)} px/m. Ready — take a shot.`);
     } catch (err) {
@@ -111,6 +112,7 @@ async function wireAfterStart(ui, calibration, history, capture) {
               centerY: puckGeom.cy,
               halfHeight: Math.max(30, puckGeom.heightPx * 6),
               maxHeight: Math.max(24, puckGeom.heightPx * 4),
+              minX: puckGeom.minX,
             }
           : undefined;
         const track = detect(frames, { roi });

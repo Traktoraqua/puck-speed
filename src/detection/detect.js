@@ -25,13 +25,15 @@ function candidateBlobs(frame, bg, thresholdLevel, minBlobPixels, roi) {
   const m = threshold(d, thresholdLevel);
   let blobs = connectedComponents(m, frame.width, frame.height, minBlobPixels);
   if (roi) {
-    // Keep only blobs near the puck's travel line and no taller than a few puck
-    // heights — excludes the shooter/stick/sheet, which sit elsewhere or are bigger.
+    // Keep only blobs near the puck's travel line, no taller than a few puck
+    // heights, and to the right of the launch point (roi.minX) — excludes the
+    // shooter/stick/sheet and the static cluster at the puck's resting spot.
     blobs = blobs.filter(
       (b) =>
         b.cy >= roi.centerY - roi.halfHeight &&
         b.cy <= roi.centerY + roi.halfHeight &&
-        b.maxY - b.minY <= roi.maxHeight
+        b.maxY - b.minY <= roi.maxHeight &&
+        (roi.minX == null || b.cx > roi.minX)
     );
   }
   return blobs;
