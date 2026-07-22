@@ -13,7 +13,7 @@ export async function startCapture({
   windowMs = 600,
   requestedFps = 60,
   detectWidth = 480,
-  bandFraction = 0.1, // keep only a centered horizontal stripe (the puck's path)
+  bandFraction = 0.2, // keep only a centered horizontal stripe (the puck's path)
   onSettings,
 } = {}) {
   const stream = await navigator.mediaDevices.getUserMedia({
