@@ -21,21 +21,35 @@ export async function boot() {
   const history = new History();
   history && ui.renderHistory(history.list());
 
-  let capture;
-  try {
-    capture = await startCapture({
-      onSettings: (s) => {
-        const fps = s.frameRate || 0;
-        ui.setFpsBadge(fps);
-        if (fps && fps < 50) ui.showWarning(`Only ${Math.round(fps)} fps granted — fast shots may be low-confidence.`);
-      },
-    });
-  } catch (err) {
-    ui.showWarning('Camera/mic permission is required.');
-    return;
-  }
-  ui.renderPreview(capture.video);
+  // iOS/WebKit rejects getUserMedia unless it's invoked from a user gesture, so
+  // the whole camera+mic pipeline starts on the "Tap to start" tap, not on load.
+  ui.onStart(async () => {
+    ui.showWarning('Starting camera…');
+    let capture;
+    try {
+      capture = await startCapture({
+        onSettings: (s) => {
+          const fps = s.frameRate || 0;
+          ui.setFpsBadge(fps);
+          if (fps && fps < 50) ui.showWarning(`Only ${Math.round(fps)} fps granted — fast shots may be low-confidence.`);
+        },
+      });
+    } catch (err) {
+      const detail = !navigator.mediaDevices
+        ? 'navigator.mediaDevices is undefined (insecure context — needs trusted HTTPS)'
+        : `${err.name}: ${err.message}`;
+      ui.showWarning(`Camera/mic unavailable — ${detail} (tap to retry)`);
+      return; // start button stays, so the user can tap again
+    }
+    ui.showWarning('');
+    ui.dismissStart();
+    ui.renderPreview(capture.video);
+    wireAfterStart(ui, calibration, history, capture);
+  });
+}
 
+// Wires calibration + the shot trigger once the camera stream exists.
+async function wireAfterStart(ui, calibration, history, capture) {
   ui.onCalibrateClick(async () => {
     ui.showWarning('Tap the two edges of the puck (76.2 mm).');
     const { pts, rect } = await ui.collectTwoTaps();

@@ -4,15 +4,24 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Puck Speed</title>
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <meta name="theme-color" content="#0b0f14" />
   </head>
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+    <script type="module">
+      // Register the offline service worker only in the production build.
+      // In dev, a cached SW would serve stale code and break HMR; so instead
+      // actively unregister any existing SW and clear its caches on load.
+      if (import.meta.env.PROD) {
+        if ('serviceWorker' in navigator) {
+          // relative path resolves under the deploy subpath (e.g. /puck-speed/sw.js)
+          window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+        }
+      } else if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+        if (window.caches) caches.keys().then((ks) => ks.forEach((k) => caches.delete(k)));
       }
     </script>
   </body>

@@ -2,6 +2,7 @@ export class UI {
   constructor(root = document.getElementById('app')) {
     this.root = root;
     this.root.innerHTML = `
+      <button id="startBtn" class="start-btn">▶ Tap to start camera</button>
       <div class="preview"><div class="badge" id="fps">-- fps</div><div class="overlay" id="overlay"></div></div>
       <div id="warn"></div>
       <div class="speed" id="speed"><small>tap to calibrate</small></div>
@@ -35,6 +36,15 @@ export class UI {
   }
   renderHistory(list) {
     this.$history.innerHTML = list.map((v) => `<span>${v.toFixed(1)}</span>`).join('');
+  }
+  // iOS requires getUserMedia to be triggered by a user gesture, so the camera
+  // starts from this button rather than on page load.
+  onStart(handler) {
+    this.root.querySelector('#startBtn').addEventListener('click', handler);
+  }
+  dismissStart() {
+    const btn = this.root.querySelector('#startBtn');
+    if (btn) btn.remove();
   }
   onCalibrateClick(handler) {
     this.root.querySelector('#calBtn').addEventListener('click', handler);
