@@ -44,7 +44,7 @@ export async function boot() {
     }
     ui.showWarning('');
     ui.dismissStart();
-    ui.renderPreview(capture.video);
+    ui.renderPreview(capture.canvas); // the cropped horizontal band
     wireAfterStart(ui, calibration, history, capture);
   });
 }

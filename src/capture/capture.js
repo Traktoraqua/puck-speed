@@ -9,7 +9,13 @@ export function toGray(imageData) {
   return gray;
 }
 
-export async function startCapture({ windowMs = 600, requestedFps = 60, detectWidth = 480, onSettings } = {}) {
+export async function startCapture({
+  windowMs = 600,
+  requestedFps = 60,
+  detectWidth = 480,
+  bandFraction = 0.1, // keep only a centered horizontal stripe (the puck's path)
+  onSettings,
+} = {}) {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { frameRate: { ideal: requestedFps }, facingMode: 'environment' },
     audio: true,
@@ -28,10 +34,17 @@ export async function startCapture({ windowMs = 600, requestedFps = 60, detectWi
     await new Promise((resolve) => video.addEventListener('loadedmetadata', resolve, { once: true }));
   }
 
+  // Source: a centered horizontal band of the camera frame (full width, bandFraction tall).
+  const srcBandH = Math.max(1, Math.round(video.videoHeight * bandFraction));
+  const srcBandY = Math.round((video.videoHeight - srcBandH) / 2);
   const scale = detectWidth / video.videoWidth;
   const dw = detectWidth;
-  const dh = Math.round(video.videoHeight * scale);
-  const canvas = new OffscreenCanvas(dw, dh);
+  const dh = Math.max(1, Math.round(srcBandH * scale)); // band height in detection pixels
+
+  // Visible canvas = exactly what detection sees, so preview/crosshair/dots align.
+  const canvas = document.createElement('canvas');
+  canvas.width = dw;
+  canvas.height = dh;
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
   const ring = new RingBuffer(windowMs);
@@ -39,7 +52,7 @@ export async function startCapture({ windowMs = 600, requestedFps = 60, detectWi
 
   function onFrame(now, meta) {
     if (!running) return;
-    ctx.drawImage(video, 0, 0, dw, dh);
+    ctx.drawImage(video, 0, srcBandY, video.videoWidth, srcBandH, 0, 0, dw, dh);
     const img = ctx.getImageData(0, 0, dw, dh);
     ring.push({ t: now, mediaTime: meta.mediaTime, width: dw, height: dh, gray: toGray(img) });
     video.requestVideoFrameCallback(onFrame);
@@ -47,7 +60,7 @@ export async function startCapture({ windowMs = 600, requestedFps = 60, detectWi
   video.requestVideoFrameCallback(onFrame);
 
   return {
-    stream, video, ring, settings, detectWidth: dw, detectHeight: dh,
+    stream, video, canvas, ring, settings, detectWidth: dw, detectHeight: dh,
     stop() {
       running = false;
       stream.getTracks().forEach((t) => t.stop());
