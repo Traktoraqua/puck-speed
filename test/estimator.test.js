@@ -39,4 +39,13 @@ describe('speed estimator', () => {
   it('throws without calibration', () => {
     expect(() => estimate({ points: [], frameCount: 0 }, {})).toThrow(/calibration/);
   });
+
+  it('rejects a line below the configured minMovingKmh', () => {
+    const points = [0, 1, 2, 3].map((i) => ({ t: i * 0.1, x: i * 41.6667, y: 5, streakLength: 8, streakAngle: 0 }));
+    const track = { points, frameCount: 4 };
+    // ~15 km/h: accepted with the default floor (5)...
+    expect(estimate(track, scale).speedKmh).toBeCloseTo(15, 1);
+    // ...but rejected when the floor is raised to 20.
+    expect(estimate(track, scale, { minMovingKmh: 20 }).method).toBe('none');
+  });
 });

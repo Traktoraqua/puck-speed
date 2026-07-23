@@ -22,6 +22,7 @@ export function estimate(track, scale, opts = {}) {
   const pxPerMeter = scale && scale.pxPerMeter;
   if (!pxPerMeter || pxPerMeter <= 0) throw new Error('calibration scale (pxPerMeter) required');
   const pts = (track && track.points) || [];
+  const minMovingKmh = opts.minMovingKmh ?? MIN_MOVING_KMH;
 
   if (pts.length >= 2) {
     // RANSAC: try every pair as a constant-velocity hypothesis; keep the moving,
@@ -35,7 +36,7 @@ export function estimate(track, scale, opts = {}) {
         const vx = (pts[j].x - pts[i].x) / dt;
         const vy = (pts[j].y - pts[i].y) / dt;
         const kmh = mpsToKmh(Math.hypot(vx, vy) / pxPerMeter);
-        if (kmh < MIN_MOVING_KMH || kmh > MAX_PLAUSIBLE_KMH) continue;
+        if (kmh < minMovingKmh || kmh > MAX_PLAUSIBLE_KMH) continue;
         const inliers = [];
         for (const p of pts) {
           const d = p.t - pts[i].t;
