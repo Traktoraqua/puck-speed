@@ -25,6 +25,7 @@ export async function boot() {
 
   ui.setUnitLabel(settings.getUnit());
   ui.setDirLabel(settings.getDirection());
+  ui.setMinSpeedLabel(settings.getMinSpeed());
   ui.renderHistory(history.list());
 
   // Unit and direction toggles (persisted; usable before the camera starts).
@@ -36,6 +37,8 @@ export async function boot() {
   ui.onDirClick(() => {
     ui.setDirLabel(settings.setDirection(settings.getDirection() === 'right' ? 'left' : 'right'));
   });
+  ui.onMinSpeedClick('down', () => ui.setMinSpeedLabel(settings.setMinSpeed(settings.getMinSpeed() - 5)));
+  ui.onMinSpeedClick('up', () => ui.setMinSpeedLabel(settings.setMinSpeed(settings.getMinSpeed() + 5)));
 
   // iOS/WebKit rejects getUserMedia unless it's invoked from a user gesture, so
   // the whole camera+mic pipeline starts on the "Tap to start" tap, not on load.
@@ -134,13 +137,13 @@ async function wireAfterStart(ui, calibration, history, capture, settings) {
           ? {
               centerY: puckGeom.cy,
               halfHeight: Math.max(30, puckGeom.heightPx * 6),
-              maxHeight: Math.max(24, puckGeom.heightPx * 4),
+              puckHeightPx: puckGeom.heightPx,
               dir,
               boundX: dir === 'left' ? puckGeom.leftEdge : puckGeom.rightEdge,
             }
           : undefined;
         const track = detect(frames, { roi });
-        result = estimate(track, scale, { exposureTime });
+        result = estimate(track, scale, { exposureTime, minMovingKmh: settings.getMinSpeed() });
       } catch (err) {
         ui.showWarning(err.message);
         trigger.arm();
