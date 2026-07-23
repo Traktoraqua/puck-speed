@@ -2,6 +2,12 @@ import { absDiff, threshold } from './frameDiff.js';
 import { connectedComponents } from './blobs.js';
 export { makeFrame } from './synthetic.js';
 
+// Cross-travel thickness band, relative to the calibrated puck height. Motion
+// blur stretches a blob along travel but leaves its perpendicular (vertical)
+// extent ~= the puck diameter, so we gate on height, not area.
+const PUCK_HEIGHT_LO = 0.5;
+const PUCK_HEIGHT_HI = 2.5;
+
 export function medianBackground(frames) {
   const { width, height } = frames[0];
   const n = frames.length;
@@ -25,17 +31,21 @@ function candidateBlobs(frame, bg, thresholdLevel, minBlobPixels, roi) {
   const m = threshold(d, thresholdLevel);
   let blobs = connectedComponents(m, frame.width, frame.height, minBlobPixels);
   if (roi) {
-    // Keep only blobs near the puck's travel line, no taller than a few puck
-    // heights, and downrange of the launch point (past roi.boundX in the shot
-    // direction) — excludes the shooter/stick/sheet and the static cluster at
-    // the puck's resting spot.
-    blobs = blobs.filter(
-      (b) =>
-        b.cy >= roi.centerY - roi.halfHeight &&
-        b.cy <= roi.centerY + roi.halfHeight &&
-        b.maxY - b.minY <= roi.maxHeight &&
-        (roi.boundX == null || (roi.dir === 'left' ? b.cx < roi.boundX : b.cx > roi.boundX))
-    );
+    // Keep only blobs near the puck's travel line, matching the puck's
+    // cross-travel thickness, and downrange of the launch point (past roi.boundX
+    // in the shot direction) — excludes the shooter/stick/sheet and the static
+    // cluster at the puck's resting spot.
+    blobs = blobs.filter((b) => {
+      if (b.cy < roi.centerY - roi.halfHeight || b.cy > roi.centerY + roi.halfHeight) return false;
+      const heightPx = b.maxY - b.minY;
+      if (roi.puckHeightPx != null) {
+        if (heightPx < PUCK_HEIGHT_LO * roi.puckHeightPx || heightPx > PUCK_HEIGHT_HI * roi.puckHeightPx) return false;
+      } else if (roi.maxHeight != null && heightPx > roi.maxHeight) {
+        return false;
+      }
+      if (roi.boundX != null && (roi.dir === 'left' ? b.cx >= roi.boundX : b.cx <= roi.boundX)) return false;
+      return true;
+    });
   }
   return blobs;
 }
