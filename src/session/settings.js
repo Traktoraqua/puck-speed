@@ -1,4 +1,4 @@
-// Persisted user preferences: shot direction and display unit.
+// Persisted user preferences: shot direction, display unit, and min-speed floor.
 const KEY = 'puck.settings';
 
 export class Settings {
@@ -27,5 +27,16 @@ export class Settings {
   setUnit(unit) {
     this._set({ unit: unit === 'mph' ? 'mph' : 'kmh' });
     return this.getUnit();
+  }
+  getMinSpeed() {
+    const v = this._all().minSpeedKmh;
+    return Number.isFinite(v) && v >= 5 && v <= 40 && v % 5 === 0 ? v : 20;
+  }
+  setMinSpeed(kmh) {
+    let v = Math.round(Number(kmh) / 5) * 5;
+    if (!Number.isFinite(v)) v = 20;
+    v = Math.min(40, Math.max(5, v));
+    this._set({ minSpeedKmh: v });
+    return this.getMinSpeed();
   }
 }
