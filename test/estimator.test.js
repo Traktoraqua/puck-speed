@@ -31,6 +31,13 @@ describe('speed estimator', () => {
     expect(r.speedKmh).toBeCloseTo(36, 3);
   });
 
+  it('streak1 fallback is still subject to the min-speed floor', () => {
+    const points = [{ t: 0, x: 0, y: 5, streakLength: 50, streakAngle: 0 }];
+    // Same 36 km/h streak1 case as above, but with the floor raised above it.
+    const r = estimate({ points, frameCount: 1 }, scale, { exposureTime: 0.05, minMovingKmh: 40 });
+    expect(r.method).toBe('none');
+  });
+
   it('reports none when there is nothing usable', () => {
     expect(estimate({ points: [], frameCount: 0 }, scale).method).toBe('none');
     expect(estimate({ points: [{ t: 0, x: 0, y: 0, streakLength: 5, streakAngle: 0 }], frameCount: 1 }, scale).method).toBe('none');

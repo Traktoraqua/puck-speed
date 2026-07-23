@@ -49,4 +49,14 @@ describe('detection pipeline', () => {
     const track = detect(frames, { thresholdLevel: 25, minBlobPixels: 3, roi });
     expect(track.points.length).toBeGreaterThanOrEqual(4);
   });
+
+  it('rejects a sub-puck speck below the LO size-gate band', () => {
+    const W = 200, H = 80;
+    const roi = { centerY: 40, halfHeight: 35, dir: 'right', boundX: 10, puckHeightPx: 9 };
+    const smallFrames = [];
+    for (let i = 0; i < 6; i++) smallFrames.push(makeFrame(i / 60, W, H, { cx: 40 + i * 10, cy: 40, r: 1 })); // ~3 px tall
+    // With a puck ~9 px tall, LO = 0.5 * 9 = 4.5 px; a ~3 px speck is below it -> rejected -> no track.
+    const track = detect(smallFrames, { thresholdLevel: 25, minBlobPixels: 3, roi });
+    expect(track.points.length).toBe(0);
+  });
 });

@@ -18,9 +18,9 @@ export class UI {
         <button id="dirBtn">Shots: → Right</button>
         <button id="unitBtn">km/h</button>
         <span class="minspeed">
-          <button id="minDownBtn" class="secondary">−</button>
+          <button id="minDownBtn" class="secondary" aria-label="Decrease minimum speed">−</button>
           <button id="minSpeedBtn" class="readonly">Min 20 km/h</button>
-          <button id="minUpBtn" class="secondary">+</button>
+          <button id="minUpBtn" class="secondary" aria-label="Increase minimum speed">+</button>
         </span>
         <button id="resetBtn" class="secondary">Reset calibration</button>
       </div>

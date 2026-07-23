@@ -50,7 +50,7 @@ export function estimate(track, scale, opts = {}) {
     if (best && best.inliers.length >= 2) {
       const { vx, vy } = refitVelocity(best.inliers); // least-squares over the inliers
       const mps = Math.hypot(vx, vy) / pxPerMeter;
-      if (mpsToKmh(mps) > MAX_PLAUSIBLE_KMH) return none(pts.length);
+      if (mpsToKmh(mps) < minMovingKmh || mpsToKmh(mps) > MAX_PLAUSIBLE_KMH) return none(pts.length);
       const n = best.inliers.length;
       const method = n >= 3 ? 'multiframe' : 'streak2';
       const confidence = n >= 4 ? 'high' : 'medium';
@@ -60,6 +60,7 @@ export function estimate(track, scale, opts = {}) {
   }
   if (pts.length === 1 && opts.exposureTime > 0) {
     const mps = (pts[0].streakLength / pxPerMeter) / opts.exposureTime;
+    if (mpsToKmh(mps) < minMovingKmh) return none(1);
     return result(mps, 'streak1', 'low', 1);
   }
   return none(pts.length);

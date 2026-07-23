@@ -37,8 +37,9 @@ export async function boot() {
   ui.onDirClick(() => {
     ui.setDirLabel(settings.setDirection(settings.getDirection() === 'right' ? 'left' : 'right'));
   });
-  ui.onMinSpeedClick('down', () => ui.setMinSpeedLabel(settings.setMinSpeed(settings.getMinSpeed() - 5)));
-  ui.onMinSpeedClick('up', () => ui.setMinSpeedLabel(settings.setMinSpeed(settings.getMinSpeed() + 5)));
+  const stepMinSpeed = (delta) => ui.setMinSpeedLabel(settings.setMinSpeed(settings.getMinSpeed() + delta));
+  ui.onMinSpeedClick('down', () => stepMinSpeed(-5));
+  ui.onMinSpeedClick('up', () => stepMinSpeed(5));
 
   // iOS/WebKit rejects getUserMedia unless it's invoked from a user gesture, so
   // the whole camera+mic pipeline starts on the "Tap to start" tap, not on load.
