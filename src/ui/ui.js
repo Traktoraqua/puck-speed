@@ -17,6 +17,11 @@ export class UI {
         <button id="calBtn">Calibrate</button>
         <button id="dirBtn">Shots: → Right</button>
         <button id="unitBtn">km/h</button>
+        <span class="minspeed">
+          <button id="minDownBtn" class="secondary">−</button>
+          <button id="minSpeedBtn" class="readonly">Min 20 km/h</button>
+          <button id="minUpBtn" class="secondary">+</button>
+        </span>
         <button id="resetBtn" class="secondary">Reset calibration</button>
       </div>
     `;
@@ -29,6 +34,7 @@ export class UI {
     this.$crosshair = this.root.querySelector('#crosshair');
     this.$dirBtn = this.root.querySelector('#dirBtn');
     this.$unitBtn = this.root.querySelector('#unitBtn');
+    this.$minSpeed = this.root.querySelector('#minSpeedBtn');
     this.crossFx = 0.5; // crosshair position as a fraction of the preview
     this.crossFy = 0.5;
     this.unit = 'kmh';
@@ -73,6 +79,12 @@ export class UI {
   }
   onUnitClick(handler) {
     this.$unitBtn.addEventListener('click', handler);
+  }
+  setMinSpeedLabel(kmh) {
+    this.$minSpeed.textContent = `Min ${kmh} km/h`;
+  }
+  onMinSpeedClick(dir, handler) {
+    this.root.querySelector(dir === 'up' ? '#minUpBtn' : '#minDownBtn').addEventListener('click', handler);
   }
   onDirClick(handler) {
     this.$dirBtn.addEventListener('click', handler);
