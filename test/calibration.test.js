@@ -2,7 +2,6 @@
 // test/calibration.test.js
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Calibration } from '../src/calibration/calibration.js';
-import { History } from '../src/session/history.js';
 
 beforeEach(() => localStorage.clear());
 
@@ -22,13 +21,5 @@ describe('Calibration', () => {
     const c = new Calibration();
     expect(() => c.setFromPoints({ x: 0, y: 0 }, { x: 1, y: 0 }, 0)).toThrow(/meters/);
     expect(() => c.setFromPoints({ x: 5, y: 5 }, { x: 5, y: 5 }, 1)).toThrow(/points/);
-  });
-});
-
-describe('History', () => {
-  it('keeps only the last 3 shots, newest first', () => {
-    const h = new History(localStorage, 3);
-    h.add(90.11); h.add(100.04); h.add(80.5); h.add(120.9);
-    expect(h.list()).toEqual([120.9, 80.5, 100]);
   });
 });

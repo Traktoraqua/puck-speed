@@ -7,12 +7,13 @@ export class UI {
       <button id="startBtn" class="start-btn">▶ Tap to start camera</button>
       <div class="preview">
         <div class="badge" id="fps">-- fps</div>
-        <div class="overlay" id="overlay"></div>
-        <div class="crosshair" id="crosshair" hidden></div>
+        <div class="frame" id="frame">
+          <div class="overlay" id="overlay"></div>
+          <div class="crosshair" id="crosshair" hidden></div>
+        </div>
       </div>
       <div id="warn"></div>
       <div class="speed" id="speed"><small>drag the crosshair onto the puck</small></div>
-      <div class="history" id="history"></div>
       <div class="controls">
         <button id="calBtn">Calibrate</button>
         <button id="dirBtn">Shots: → Right</button>
@@ -26,17 +27,22 @@ export class UI {
       </div>
     `;
     this.$speed = this.root.querySelector('#speed');
-    this.$history = this.root.querySelector('#history');
     this.$warn = this.root.querySelector('#warn');
     this.$fps = this.root.querySelector('#fps');
     this.$preview = this.root.querySelector('.preview');
+    this.$frame = this.root.querySelector('#frame');
     this.$overlay = this.root.querySelector('#overlay');
     this.$crosshair = this.root.querySelector('#crosshair');
     this.$dirBtn = this.root.querySelector('#dirBtn');
     this.$unitBtn = this.root.querySelector('#unitBtn');
     this.$minSpeed = this.root.querySelector('#minSpeedBtn');
-    this.crossFx = 0.5; // crosshair position as a fraction of the preview
+    this.crossFx = 0.5; // crosshair position as a fraction of the full detection frame
     this.crossFy = 0.5;
+    // Calibration zoom: the preview window shows only a `zoomScale`-wide slice of
+    // the frame starting at `zoomBase` (both fractions of the full frame width).
+    this.zoomBase = 0;
+    this.zoomScale = 1;
+    this._zoomed = false;
     this.unit = 'kmh';
   }
   // Convert a canonical km/h value to the display unit + label.
@@ -47,7 +53,7 @@ export class UI {
   }
   renderPreview(video) {
     video.classList.add('preview-video');
-    this.$preview.prepend(video);
+    this.$frame.prepend(video);
   }
   setFpsBadge(fps) {
     this.$fps.textContent = `${Math.round(fps)} fps`;
@@ -66,9 +72,9 @@ export class UI {
     this.$speed.innerHTML =
       `<span class="${cls}">${value.toFixed(1)}</span><small> ${label}${tag}</small>`;
   }
-  // list holds canonical km/h values; display converts to the current unit.
-  renderHistory(list) {
-    this.$history.innerHTML = list.map((kmh) => `<span>${this._fmt(kmh).value.toFixed(1)}</span>`).join('');
+  // Canonical km/h → display value + label in the current unit (used for TTS too).
+  displaySpeed(kmh) {
+    return this._fmt(kmh);
   }
   setUnitLabel(unit) {
     this.unit = unit;
@@ -112,7 +118,10 @@ export class UI {
     let dragging = false;
     const move = (ev) => {
       const rect = this.$preview.getBoundingClientRect();
-      this.crossFx = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width));
+      // The window only shows the [zoomBase, zoomBase+zoomScale] slice of the frame,
+      // so map the pointer's position within the window into that slice.
+      const localX = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width));
+      this.crossFx = this.zoomBase + localX * this.zoomScale;
       this.crossFy = Math.min(1, Math.max(0, (ev.clientY - rect.top) / rect.height));
       this.positionCrosshair();
       ev.preventDefault();
@@ -125,6 +134,29 @@ export class UI {
   positionCrosshair() {
     this.$crosshair.style.left = `${this.crossFx * 100}%`;
     this.$crosshair.style.top = `${this.crossFy * 100}%`;
+  }
+  // Calibration view: magnify the preview 3× onto the third of the frame where the
+  // puck rests for this shot direction (right third for → Right, left third for ← Left).
+  // Detection still uses the full frame; only the on-screen window is cropped.
+  zoomToSide(direction) {
+    this.$preview.hidden = false;
+    this._zoomed = true;
+    this.zoomScale = 1 / 3;
+    this.zoomBase = direction === 'left' ? 0 : 2 / 3;
+    this.$frame.style.width = '300%';
+    this.$frame.style.transform = `translateX(${-this.zoomBase * 100}%)`;
+    // Re-centre the crosshair into the visible third.
+    this.crossFx = this.zoomBase + this.zoomScale / 2;
+    this.crossFy = 0.5;
+    this.positionCrosshair();
+  }
+  // After calibration the video isn't needed — hide the whole preview.
+  hidePreview() {
+    this._zoomed = false;
+    this.$preview.hidden = true;
+  }
+  isCalibrating() {
+    return this._zoomed;
   }
   // Current crosshair position as a fraction {fx, fy} of the preview / detection frame.
   getCrosshairFraction() {

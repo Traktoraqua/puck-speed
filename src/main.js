@@ -5,9 +5,9 @@ import { detect } from './detection/detect.js';
 import { estimate } from './speed/estimator.js';
 import { Calibration } from './calibration/calibration.js';
 import { measureDarkBlob } from './calibration/puckDetect.js';
-import { History } from './session/history.js';
 import { Settings } from './session/settings.js';
 import { UI } from './ui/ui.js';
+import { speak, primeSpeech } from './audio/speak.js';
 
 export function appName() {
   return 'puck-speed';
@@ -20,22 +20,21 @@ export function freezeWindow(triggerMs, preMs = 100, postMs = 400) {
 export async function boot() {
   const ui = new UI();
   const calibration = new Calibration();
-  const history = new History();
   const settings = new Settings();
 
   ui.setUnitLabel(settings.getUnit());
   ui.setDirLabel(settings.getDirection());
   ui.setMinSpeedLabel(settings.getMinSpeed());
-  ui.renderHistory(history.list());
 
   // Unit and direction toggles (persisted; usable before the camera starts).
   ui.onUnitClick(() => {
-    const unit = settings.setUnit(settings.getUnit() === 'kmh' ? 'mph' : 'kmh');
-    ui.setUnitLabel(unit);
-    ui.renderHistory(history.list());
+    ui.setUnitLabel(settings.setUnit(settings.getUnit() === 'kmh' ? 'mph' : 'kmh'));
   });
   ui.onDirClick(() => {
-    ui.setDirLabel(settings.setDirection(settings.getDirection() === 'right' ? 'left' : 'right'));
+    const dir = settings.setDirection(settings.getDirection() === 'right' ? 'left' : 'right');
+    ui.setDirLabel(dir);
+    // While calibrating, follow the shot side so the zoomed third matches.
+    if (ui.isCalibrating()) ui.zoomToSide(dir);
   });
   const stepMinSpeed = (delta) => ui.setMinSpeedLabel(settings.setMinSpeed(settings.getMinSpeed() + delta));
   ui.onMinSpeedClick('down', () => stepMinSpeed(-5));
@@ -44,6 +43,8 @@ export async function boot() {
   // iOS/WebKit rejects getUserMedia unless it's invoked from a user gesture, so
   // the whole camera+mic pipeline starts on the "Tap to start" tap, not on load.
   ui.onStart(async () => {
+    // This tap is a user gesture — unlock iOS speech now so shot readouts work later.
+    primeSpeech();
     ui.showWarning('Starting camera…');
     let capture;
     try {
@@ -64,14 +65,15 @@ export async function boot() {
     ui.showWarning('');
     ui.dismissStart();
     ui.renderPreview(capture.canvas); // the cropped horizontal band
-    wireAfterStart(ui, calibration, history, capture, settings);
+    wireAfterStart(ui, calibration, capture, settings);
   });
 }
 
 // Wires calibration + the shot trigger once the camera stream exists.
-async function wireAfterStart(ui, calibration, history, capture, settings) {
+async function wireAfterStart(ui, calibration, capture, settings) {
   // Draggable crosshair: position it over the black puck, then press Calibrate.
   ui.enableCrosshair();
+  ui.zoomToSide(settings.getDirection()); // magnify onto the puck's resting third
   ui.showWarning('Drag the crosshair onto the puck, then press Calibrate.');
 
   // Puck geometry from calibration, used to focus shot detection on the puck's
@@ -82,6 +84,7 @@ async function wireAfterStart(ui, calibration, history, capture, settings) {
     calibration.clear();
     puckGeom = null;
     ui.clearOverlay();
+    ui.zoomToSide(settings.getDirection()); // bring the (hidden) preview back to re-calibrate
     ui.showWarning('Calibration reset — drag the crosshair onto the puck and press Calibrate.');
   });
 
@@ -108,7 +111,7 @@ async function wireAfterStart(ui, calibration, history, capture, settings) {
       );
       // Store both edges; detection tracks downrange in the chosen shot direction.
       puckGeom = { cy, heightPx: box.heightPx, leftEdge: box.minX, rightEdge: box.maxX };
-      ui.showCalibrationBox(box, capture.detectWidth, capture.detectHeight);
+      ui.hidePreview(); // video no longer needed once calibrated
       ui.showWarning(`Calibrated: puck ${box.widthPx}px wide → ${Math.round(pxPerMeter)} px/m. Ready — take a shot.`);
     } catch (err) {
       ui.showWarning(`Calibration failed: ${err.message}`);
@@ -151,7 +154,7 @@ async function wireAfterStart(ui, calibration, history, capture, settings) {
         return;
       }
       ui.showResult(result);
-      if (result.method !== 'none') ui.renderHistory(history.add(result.speedKmh));
+      if (result.method !== 'none') speak(ui.displaySpeed(result.speedKmh).value.toFixed(1));
       trigger.arm();
     }, 450);
   });

@@ -2,8 +2,10 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, sans-serif; background: #0b0f14; color: #e7edf3; }
 #app { display: flex; flex-direction: column; }
-.preview { position: relative; width: 100%; background: #000; touch-action: none; }
-.preview video, .preview canvas { width: 100%; display: block; position: relative; z-index: 0; }
+.preview { position: relative; width: 100%; background: #000; touch-action: none; overflow: hidden; }
+.preview[hidden] { display: none; }
+.frame { position: relative; width: 100%; transition: transform 0.15s ease, width 0.15s ease; }
+.frame video, .frame canvas { width: 100%; display: block; position: relative; z-index: 0; }
 .overlay { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .calbox { position: absolute; border: 2px solid #35d07f; border-radius: 3px; box-shadow: 0 0 8px #35d07f; }
 .track-dot { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #ff5c5c; box-shadow: 0 0 4px #000; }
@@ -16,8 +18,6 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #0b0f14; color
 .speed small { font-size: 3.5vw; opacity: 0.7; }
 .confidence-low { color: #f4b740; }
 .confidence-none { color: #e5484d; }
-.history { display: flex; gap: 12px; justify-content: center; padding: 6px; }
-.history span { font-size: 5vw; font-weight: 700; }
 .badge { position: absolute; top: 8px; right: 8px; font-size: 12px; background: #1c2530; padding: 4px 8px; border-radius: 8px; z-index: 3; }
 .warn { background: #3a2a12; color: #f4b740; padding: 10px; text-align: center; }
 button { font-size: 16px; padding: 12px 16px; border: 0; border-radius: 10px; background: #2b6cff; color: #fff; }
