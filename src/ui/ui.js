@@ -136,13 +136,14 @@ export class UI {
     this.$crosshair.style.top = `${this.crossFy * 100}%`;
   }
   // Calibration view: magnify the preview 3× onto the third of the frame where the
-  // puck rests for this shot direction (right third for → Right, left third for ← Left).
+  // puck rests — the side it launches *from*. A → Right shot starts on the left,
+  // so show the left third; a ← Left shot starts on the right, so show the right third.
   // Detection still uses the full frame; only the on-screen window is cropped.
   zoomToSide(direction) {
     this.$preview.hidden = false;
     this._zoomed = true;
     this.zoomScale = 1 / 3;
-    this.zoomBase = direction === 'left' ? 0 : 2 / 3;
+    this.zoomBase = direction === 'left' ? 2 / 3 : 0;
     this.$frame.style.width = '300%';
     this.$frame.style.transform = `translateX(${-this.zoomBase * 100}%)`;
     // Re-centre the crosshair into the visible third.

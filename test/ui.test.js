@@ -36,24 +36,23 @@ describe('UI has no last-3 history', () => {
 });
 
 describe('UI calibration zoom', () => {
-  it('zooms onto the right third for → Right shots', () => {
+  it('zooms onto the left third for → Right shots (puck launches from the left)', () => {
     const ui = mount();
     ui.zoomToSide('right');
     expect(ui.isCalibrating()).toBe(true);
     expect(document.querySelector('#frame').style.width).toBe('300%');
-    // Crosshair recentres into the visible (right) third of the full frame.
-    expect(ui.getCrosshairFraction().fx).toBeCloseTo(5 / 6, 6);
+    // Crosshair recentres into the visible (left) third of the full frame.
+    expect(ui.getCrosshairFraction().fx).toBeCloseTo(1 / 6, 6);
   });
-  it('zooms onto the left third for ← Left shots', () => {
+  it('zooms onto the right third for ← Left shots (puck launches from the right)', () => {
     const ui = mount();
     ui.zoomToSide('left');
-    expect(ui.getCrosshairFraction().fx).toBeCloseTo(1 / 6, 6);
+    expect(ui.getCrosshairFraction().fx).toBeCloseTo(5 / 6, 6);
   });
   it('maps a drag within the window into the visible third', () => {
     const ui = mount();
-    ui.zoomToSide('right'); // base 2/3, scale 1/3
+    ui.zoomToSide('left'); // base 2/3, scale 1/3
     // Simulate the drag mapping directly: a pointer 25% across the window.
-    ui.zoomBase = 2 / 3; ui.zoomScale = 1 / 3;
     ui.crossFx = ui.zoomBase + 0.25 * ui.zoomScale;
     expect(ui.crossFx).toBeCloseTo(2 / 3 + 1 / 12, 6);
   });
