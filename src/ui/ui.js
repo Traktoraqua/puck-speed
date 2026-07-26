@@ -4,28 +4,45 @@ export class UI {
   constructor(root = document.getElementById('app')) {
     this.root = root;
     this.root.innerHTML = `
-      <button id="startBtn" class="start-btn">▶ Tap to start camera</button>
-      <div class="preview">
-        <div class="badge" id="fps">-- fps</div>
-        <div class="frame" id="frame">
-          <div class="overlay" id="overlay"></div>
-          <div class="crosshair" id="crosshair" hidden></div>
+      <header id="hdr">
+        <div class="brand">PUCK<span>SPEED</span></div>
+        <div class="status"><span class="dot"></span><span id="fps">Camera off</span></div>
+      </header>
+      <div class="stage">
+        <div class="preview">
+          <div class="frame" id="frame">
+            <div class="overlay" id="overlay"></div>
+            <div class="crosshair" id="crosshair" hidden></div>
+          </div>
+        </div>
+        <main class="board">
+          <div class="count-label">Puck speed</div>
+          <div class="speed" id="speed"><small>start the camera, then calibrate on the puck</small></div>
+          <div class="substats">
+            <div class="substat"><div class="v" id="dirStat">→ Right</div><div class="k">Direction</div></div>
+            <div class="substat"><div class="v" id="minStat">20 km/h</div><div class="k">Min speed</div></div>
+          </div>
+        </main>
+        <div id="warn"></div>
+      </div>
+      <div class="controls">
+        <button id="startBtn">Start camera</button>
+        <div class="row">
+          <button id="calBtn">Calibrate</button>
+          <button id="resetBtn" class="ghost">Reset</button>
+        </div>
+        <div class="row">
+          <button id="dirBtn">Shots: → Right</button>
+          <button id="unitBtn">km/h</button>
+        </div>
+        <div class="minspeed">
+          <button id="minDownBtn" class="step" aria-label="Decrease minimum speed">−</button>
+          <b id="minSpeedBtn">Min 20 km/h</b>
+          <button id="minUpBtn" class="step" aria-label="Increase minimum speed">+</button>
         </div>
       </div>
-      <div id="warn"></div>
-      <div class="speed" id="speed"><small>drag the crosshair onto the puck</small></div>
-      <div class="controls">
-        <button id="calBtn">Calibrate</button>
-        <button id="dirBtn">Shots: → Right</button>
-        <button id="unitBtn">km/h</button>
-        <span class="minspeed">
-          <button id="minDownBtn" class="secondary" aria-label="Decrease minimum speed">−</button>
-          <button id="minSpeedBtn" class="readonly">Min 20 km/h</button>
-          <button id="minUpBtn" class="secondary" aria-label="Increase minimum speed">+</button>
-        </span>
-        <button id="resetBtn" class="secondary">Reset calibration</button>
-      </div>
     `;
+    this.$hdr = this.root.querySelector('#hdr');
     this.$speed = this.root.querySelector('#speed');
     this.$warn = this.root.querySelector('#warn');
     this.$fps = this.root.querySelector('#fps');
@@ -34,8 +51,10 @@ export class UI {
     this.$overlay = this.root.querySelector('#overlay');
     this.$crosshair = this.root.querySelector('#crosshair');
     this.$dirBtn = this.root.querySelector('#dirBtn');
+    this.$dirStat = this.root.querySelector('#dirStat');
     this.$unitBtn = this.root.querySelector('#unitBtn');
     this.$minSpeed = this.root.querySelector('#minSpeedBtn');
+    this.$minStat = this.root.querySelector('#minStat');
     this.crossFx = 0.5; // crosshair position as a fraction of the full detection frame
     this.crossFy = 0.5;
     // Calibration zoom: the preview window shows only a `zoomScale`-wide slice of
@@ -57,6 +76,7 @@ export class UI {
   }
   setFpsBadge(fps) {
     this.$fps.textContent = `${Math.round(fps)} fps`;
+    this.$hdr.classList.add('live'); // green status dot once the camera is running
   }
   showWarning(msg) {
     this.$warn.innerHTML = msg ? `<div class="warn">${msg}</div>` : '';
@@ -81,13 +101,16 @@ export class UI {
     this.$unitBtn.textContent = unit === 'mph' ? 'mph' : 'km/h';
   }
   setDirLabel(direction) {
-    this.$dirBtn.textContent = direction === 'left' ? 'Shots: ← Left' : 'Shots: → Right';
+    const arrow = direction === 'left' ? '← Left' : '→ Right';
+    this.$dirBtn.textContent = `Shots: ${arrow}`;
+    this.$dirStat.textContent = arrow;
   }
   onUnitClick(handler) {
     this.$unitBtn.addEventListener('click', handler);
   }
   setMinSpeedLabel(kmh) {
     this.$minSpeed.textContent = `Min ${kmh} km/h`;
+    this.$minStat.textContent = `${kmh} km/h`;
   }
   onMinSpeedClick(dir, handler) {
     this.root.querySelector(dir === 'up' ? '#minUpBtn' : '#minDownBtn').addEventListener('click', handler);
