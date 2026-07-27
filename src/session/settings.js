@@ -39,4 +39,15 @@ export class Settings {
     this._set({ minSpeedKmh: v });
     return this.getMinSpeed();
   }
+  getSensitivity() {
+    const v = this._all().sensitivity;
+    return Number.isInteger(v) && v >= 1 && v <= 9 ? v : 5;
+  }
+  setSensitivity(s) {
+    let v = Math.round(Number(s));
+    if (!Number.isFinite(v)) v = 5;
+    v = Math.min(9, Math.max(1, v));
+    this._set({ sensitivity: v });
+    return this.getSensitivity();
+  }
 }

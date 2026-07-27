@@ -1,5 +1,10 @@
 import { kmhToMph } from '../math/units.js';
 
+// Sensitivity slider (1..9) → human label, mirroring the shot-counter app.
+const SENS_NAMES = { 1: 'Very low', 2: 'Low', 3: 'Low', 4: 'Medium', 5: 'Medium', 6: 'Medium', 7: 'High', 8: 'High', 9: 'Very high' };
+// Full-scale RMS energy for the sound-level meter (the fill/gate are level ÷ this).
+const METER_MAX = 0.5;
+
 export class UI {
   constructor(root = document.getElementById('app')) {
     this.root = root;
@@ -24,6 +29,10 @@ export class UI {
           </div>
         </main>
         <div id="warn"></div>
+        <div class="meterwrap">
+          <div class="meter"><div class="fill" id="fill"></div><div class="gate" id="gate"></div></div>
+          <div class="meter-caption"><span>Sound level</span><span id="trigCap">Trigger line</span></div>
+        </div>
       </div>
       <div class="controls">
         <button id="startBtn">Start camera</button>
@@ -40,6 +49,10 @@ export class UI {
           <b id="minSpeedBtn">Min 20 km/h</b>
           <button id="minUpBtn" class="step" aria-label="Increase minimum speed">+</button>
         </div>
+        <div class="sens">
+          <label><span>Sensitivity</span><b id="sensVal">Medium</b></label>
+          <input type="range" id="sens" min="1" max="9" value="5" step="1" aria-label="Shot detection sensitivity" />
+        </div>
       </div>
     `;
     this.$hdr = this.root.querySelector('#hdr');
@@ -55,6 +68,10 @@ export class UI {
     this.$unitBtn = this.root.querySelector('#unitBtn');
     this.$minSpeed = this.root.querySelector('#minSpeedBtn');
     this.$minStat = this.root.querySelector('#minStat');
+    this.$fill = this.root.querySelector('#fill');
+    this.$gate = this.root.querySelector('#gate');
+    this.$sens = this.root.querySelector('#sens');
+    this.$sensVal = this.root.querySelector('#sensVal');
     this.crossFx = 0.5; // crosshair position as a fraction of the full detection frame
     this.crossFy = 0.5;
     // Calibration zoom: the preview window shows only a `zoomScale`-wide slice of
@@ -111,6 +128,21 @@ export class UI {
   setMinSpeedLabel(kmh) {
     this.$minSpeed.textContent = `Min ${kmh} km/h`;
     this.$minStat.textContent = `${kmh} km/h`;
+  }
+  // Live sound-level meter: fill = current level, gate = trigger threshold, both
+  // as a fraction of METER_MAX. Values are raw RMS energy from the audio worklet.
+  setMeter(level, threshold) {
+    this.$fill.style.width = `${Math.min(100, (level / METER_MAX) * 100)}%`;
+    this.$gate.style.left = `${Math.min(97, (threshold / METER_MAX) * 100)}%`;
+  }
+  setSensLabel(s) {
+    this.$sensVal.textContent = SENS_NAMES[s] || 'Medium';
+  }
+  setSensSlider(s) {
+    this.$sens.value = String(s);
+  }
+  onSensInput(handler) {
+    this.$sens.addEventListener('input', () => handler(Number(this.$sens.value)));
   }
   onMinSpeedClick(dir, handler) {
     this.root.querySelector(dir === 'up' ? '#minUpBtn' : '#minDownBtn').addEventListener('click', handler);

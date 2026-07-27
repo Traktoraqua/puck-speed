@@ -8,6 +8,7 @@ import { measureDarkBlob } from './calibration/puckDetect.js';
 import { Settings } from './session/settings.js';
 import { UI } from './ui/ui.js';
 import { speak, primeSpeech } from './audio/speak.js';
+import { sensitivityToParams } from './audio/onsetDetector.js';
 
 export function appName() {
   return 'puck-speed';
@@ -25,6 +26,17 @@ export async function boot() {
   ui.setUnitLabel(settings.getUnit());
   ui.setDirLabel(settings.getDirection());
   ui.setMinSpeedLabel(settings.getMinSpeed());
+  ui.setSensSlider(settings.getSensitivity());
+  ui.setSensLabel(settings.getSensitivity());
+
+  // Holds the live audio trigger once the mic starts, so the sensitivity slider
+  // can retune detection while listening.
+  let audioTrigger = null;
+  ui.onSensInput((s) => {
+    const v = settings.setSensitivity(s);
+    ui.setSensLabel(v);
+    if (audioTrigger) audioTrigger.setSensitivity(sensitivityToParams(v));
+  });
 
   // Unit and direction toggles (persisted; usable before the camera starts).
   ui.onUnitClick(() => {
@@ -65,12 +77,12 @@ export async function boot() {
     ui.showWarning('');
     ui.dismissStart();
     ui.renderPreview(capture.canvas); // the cropped horizontal band
-    wireAfterStart(ui, calibration, capture, settings);
+    wireAfterStart(ui, calibration, capture, settings, (t) => { audioTrigger = t; });
   });
 }
 
 // Wires calibration + the shot trigger once the camera stream exists.
-async function wireAfterStart(ui, calibration, capture, settings) {
+async function wireAfterStart(ui, calibration, capture, settings, setTrigger) {
   // Draggable crosshair: position it over the black puck, then press Calibrate.
   ui.enableCrosshair();
   ui.zoomToSide(settings.getDirection()); // magnify onto the puck's resting third
@@ -157,7 +169,11 @@ async function wireAfterStart(ui, calibration, capture, settings) {
       if (result.method !== 'none') speak(ui.displaySpeed(result.speedKmh).value.toFixed(1));
       trigger.arm();
     }, 450);
+  }, {
+    ...sensitivityToParams(settings.getSensitivity()),
+    onLevel: (level, threshold) => ui.setMeter(level, threshold),
   });
+  setTrigger(trigger); // let the sensitivity slider retune this trigger live
 
   // Resume the autoplay-suspended AudioContext on the first user gesture anywhere.
   // Registered after `trigger` exists (no TDZ), and covers both the calibrate tap

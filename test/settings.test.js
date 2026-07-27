@@ -32,4 +32,12 @@ describe('Settings', () => {
     expect(s.setMinSpeed(17)).toBe(15);   // snap to nearest 5
     expect(new Settings().getMinSpeed()).toBe(15); // persisted
   });
+  it('defaults sensitivity to 5 and clamps/persists 1..9', () => {
+    const s = new Settings();
+    expect(s.getSensitivity()).toBe(5);
+    expect(s.setSensitivity(0)).toBe(1);   // clamp low
+    expect(s.setSensitivity(12)).toBe(9);  // clamp high
+    expect(s.setSensitivity(7)).toBe(7);
+    expect(new Settings().getSensitivity()).toBe(7); // persisted
+  });
 });

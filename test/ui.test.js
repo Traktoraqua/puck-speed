@@ -64,3 +64,28 @@ describe('UI calibration zoom', () => {
     expect(document.querySelector('.preview').hidden).toBe(true);
   });
 });
+
+describe('UI sound meter + sensitivity', () => {
+  it('positions the fill and gate as a fraction of full scale', () => {
+    const ui = mount();
+    ui.setMeter(0.25, 0.05); // METER_MAX is 0.5 → 50% fill, 10% gate
+    expect(document.querySelector('#fill').style.width).toBe('50%');
+    expect(document.querySelector('#gate').style.left).toBe('10%');
+  });
+  it('clamps an over-scale level to 100% fill', () => {
+    const ui = mount();
+    ui.setMeter(1.0, 0.05);
+    expect(document.querySelector('#fill').style.width).toBe('100%');
+  });
+  it('labels the sensitivity value and routes slider input', () => {
+    const ui = mount();
+    ui.setSensLabel(9);
+    expect(document.querySelector('#sensVal').textContent).toBe('Very high');
+    let got = 0;
+    ui.onSensInput((v) => { got = v; });
+    const slider = document.querySelector('#sens');
+    slider.value = '3';
+    slider.dispatchEvent(new Event('input'));
+    expect(got).toBe(3);
+  });
+});

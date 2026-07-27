@@ -82,6 +82,34 @@ header.live .dot{ background:var(--ok); box-shadow:0 0 8px var(--ok); }
 .substat .v{ font-family:'Chakra Petch',sans-serif; font-weight:600; font-size:20px; font-variant-numeric:tabular-nums; color:var(--ice); }
 .substat .k{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--steel); margin-top:3px; }
 
+/* ---- sound-level meter ---- */
+.meterwrap{ padding:0 18px 12px; }
+.meter{
+  height:10px; border-radius:5px; background:var(--panel);
+  border:1px solid var(--line); overflow:hidden; position:relative;
+}
+.meter .fill{
+  height:100%; width:0%;
+  background:linear-gradient(90deg, var(--ok), var(--amber) 70%, var(--lamp));
+  transition:width .06s linear;
+}
+.meter .gate{ position:absolute; top:-3px; bottom:-3px; width:2px; background:var(--ice); opacity:.8; }
+.meter-caption{
+  display:flex; justify-content:space-between;
+  font-size:11px; color:var(--steel); letter-spacing:.06em;
+  margin-top:6px; text-transform:uppercase;
+}
+
+/* ---- sensitivity slider ---- */
+.sens{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+.sens label{
+  display:flex; justify-content:space-between;
+  font-family:'Chakra Petch',sans-serif; font-weight:600; font-size:12px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--steel); margin-bottom:8px;
+}
+.sens label b{ color:var(--ice); }
+input[type=range]{ width:100%; accent-color:var(--amber); height:28px; }
+
 /* ---- hint / warning banner ---- */
 #warn:empty{ display:none; }
 .warn{
