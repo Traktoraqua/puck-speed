@@ -68,13 +68,13 @@ describe('UI calibration zoom', () => {
 describe('UI sound meter + sensitivity', () => {
   it('positions the fill and gate as a fraction of full scale', () => {
     const ui = mount();
-    ui.setMeter(0.25, 0.05); // METER_MAX is 0.5 → 50% fill, 10% gate
-    expect(document.querySelector('#fill').style.width).toBe('50%');
-    expect(document.querySelector('#gate').style.left).toBe('10%');
+    ui.setMeter(0.25, 0.05); // METER_MAX is 1.0 (peak) → 25% fill, 5% gate
+    expect(document.querySelector('#fill').style.width).toBe('25%');
+    expect(document.querySelector('#gate').style.left).toBe('5%');
   });
   it('clamps an over-scale level to 100% fill', () => {
     const ui = mount();
-    ui.setMeter(1.0, 0.05);
+    ui.setMeter(1.5, 0.05);
     expect(document.querySelector('#fill').style.width).toBe('100%');
   });
   it('labels the sensitivity value and routes slider input', () => {

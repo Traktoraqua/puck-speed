@@ -5,13 +5,13 @@ export function rmsEnergy(samples) {
 }
 
 // Sensitivity slider (1 = least sensitive .. 9 = most) → detector thresholds.
-// Higher sensitivity lowers both the absolute floor and the rise ratio a shot
-// must clear above the adaptive noise baseline. Values are tunable on-device.
+// Mirrors the shot-counter app's mapping so the shot trigger sits at the same
+// loudness (the worklet now reports peak amplitude, as shot-counter does).
 export function sensitivityToParams(sensitivity) {
   const s = Math.min(9, Math.max(1, Math.round(sensitivity) || 5));
   return {
-    riseFactor: 6.5 - 0.5 * s, // s1=6.0, s5=4.0, s9=2.0
-    floor: 0.035 - 0.003 * s,  // s1=0.032, s5=0.020, s9=0.008
+    riseFactor: 10.5 - s,     // ratio above the adaptive noise floor: s1=9.5 .. s9=1.5
+    floor: 0.32 - 0.028 * s,  // absolute peak floor: s1≈0.29 .. s9≈0.068
   };
 }
 

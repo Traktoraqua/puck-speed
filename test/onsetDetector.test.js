@@ -26,7 +26,7 @@ describe('onset detection', () => {
     const high = sensitivityToParams(9);
     expect(low.riseFactor).toBeGreaterThan(high.riseFactor);
     expect(low.floor).toBeGreaterThan(high.floor);
-    expect(mid.floor).toBeCloseTo(0.02, 6);
+    expect(mid.floor).toBeCloseTo(0.18, 6); // shot-counter minPeak at sensitivity 5
     // out-of-range and junk clamp to the ends / default
     expect(sensitivityToParams(99)).toEqual(high);
     expect(sensitivityToParams(-4)).toEqual(low);

@@ -118,13 +118,13 @@ async function wireAfterStart(ui, calibration, capture, settings, setTrigger) {
     }
     const cy = Math.round((box.minY + box.maxY) / 2);
     try {
-      const { pxPerMeter } = calibration.setFromPoints(
+      calibration.setFromPoints(
         { x: box.minX, y: cy }, { x: box.maxX, y: cy }, 0.0762, 'puck-crosshair'
       );
       // Store both edges; detection tracks downrange in the chosen shot direction.
       puckGeom = { cy, heightPx: box.heightPx, leftEdge: box.minX, rightEdge: box.maxX };
       ui.hidePreview(); // video no longer needed once calibrated
-      ui.showWarning(`Calibrated: puck ${box.widthPx}px wide → ${Math.round(pxPerMeter)} px/m. Ready — take a shot.`);
+      ui.showWarning('Ready — take a shot.');
     } catch (err) {
       ui.showWarning(`Calibration failed: ${err.message}`);
     }
@@ -166,7 +166,7 @@ async function wireAfterStart(ui, calibration, capture, settings, setTrigger) {
         return;
       }
       ui.showResult(result);
-      if (result.method !== 'none') speak(ui.displaySpeed(result.speedKmh).value.toFixed(1));
+      if (result.method !== 'none') speak(ui.displaySpeed(result.speedKmh).value.toFixed(0));
       trigger.arm();
     }, 450);
   }, {

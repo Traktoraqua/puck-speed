@@ -17,16 +17,17 @@ describe('speak (Web Speech readout)', () => {
     expect(primeSpeech()).toBe(false);
   });
 
-  it('cancels queued speech and speaks the given text', () => {
+  it('cancels queued speech and speaks the given text in the default voice', () => {
     const spoken = [];
     globalThis.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
     globalThis.speechSynthesis = {
       cancel: vi.fn(),
-      speak: vi.fn((u) => spoken.push(u.text)),
+      speak: vi.fn((u) => spoken.push(u)),
     };
-    expect(speak('49.3')).toBe(true);
+    expect(speak('50')).toBe(true);
     expect(globalThis.speechSynthesis.cancel).toHaveBeenCalledOnce();
-    expect(spoken).toEqual(['49.3']);
+    expect(spoken.map((u) => u.text)).toEqual(['50']);
+    expect(spoken[0].lang).toBeUndefined(); // no forced language — phone default
   });
 
   it('primeSpeech speaks a silent utterance to unlock iOS', () => {

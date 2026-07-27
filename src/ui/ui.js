@@ -2,8 +2,8 @@ import { kmhToMph } from '../math/units.js';
 
 // Sensitivity slider (1..9) → human label, mirroring the shot-counter app.
 const SENS_NAMES = { 1: 'Very low', 2: 'Low', 3: 'Low', 4: 'Medium', 5: 'Medium', 6: 'Medium', 7: 'High', 8: 'High', 9: 'Very high' };
-// Full-scale RMS energy for the sound-level meter (the fill/gate are level ÷ this).
-const METER_MAX = 0.5;
+// Full-scale peak amplitude for the sound-level meter (the fill/gate are level ÷ this).
+const METER_MAX = 1.0;
 
 export class UI {
   constructor(root = document.getElementById('app')) {
@@ -107,7 +107,7 @@ export class UI {
     const tag = result.confidence === 'high' ? '' : ` · ${result.confidence}`;
     const { value, label } = this._fmt(result.speedKmh);
     this.$speed.innerHTML =
-      `<span class="${cls}">${value.toFixed(1)}</span><small> ${label}${tag}</small>`;
+      `<span class="${cls}">${value.toFixed(0)}</span><small> ${label}${tag}</small>`;
   }
   // Canonical km/h → display value + label in the current unit (used for TTS too).
   displaySpeed(kmh) {

@@ -20,6 +20,7 @@ export function speak(text) {
   if (!s || typeof globalThis.SpeechSynthesisUtterance !== 'function') return false;
   s.cancel(); // drop any queued/earlier readout so the newest shot wins
   const u = new globalThis.SpeechSynthesisUtterance(String(text));
+  // No lang set: speak in the phone's default voice/language.
   s.speak(u);
   return true;
 }
